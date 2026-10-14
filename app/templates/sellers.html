@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Sellers{% endblock %}
+{% block content %}
+<h1>Sellers <span class="meta">({{ rows|length }})</span></h1>
+{% if notice %}<p class="alert ok">{{ notice }}</p>{% endif %}
+<p class="meta">
+  Every domain a scan has touched. <strong>Excluding</strong> one stops it being
+  scanned or matched ever again — it is a flag rather than a delete, because
+  deleting the row would just let the next scan recreate it.
+  <strong>Purging</strong> removes what was found on a dealer without excluding
+  the domain.
+</p>
+
+<table>
+  <thead><tr>
+    <th>Domain</th><th>State</th><th>Fetch</th><th>Tracked</th><th>Open viol.</th>
+    <th>Last checked</th><th>Actions</th>
+  </tr></thead>
+  <tbody>{% for s in rows %}
+    <tr class="{% if s.excluded %}inactive{% elif s.open_violations %}row-bad{% endif %}">
+      <td>
+        <strong>{{ s.domain }}</strong>
+        {% if s.first_seen_via %}<span class="meta small">via {{ s.first_seen_via }}</span>{% endif %}
+        {% if s.excluded_reason %}<br><span class="meta small">{{ s.excluded_reason }}</span>{% endif %}
+        {% if s.notes %}<br><span class="meta small">{{ s.notes[:90] }}</span>{% endif %}
+      </td>
+      <td>
+        {% if s.excluded %}<span class="pill open">excluded</span>
+        {% elif s.is_authorized %}<span class="pill done">authorized</span>
+        {% else %}<span class="meta">not marked authorized</span>{% endif %}
+      </td>
+      <td class="meta">
+        tier {{ s.fetch_tier }}{% if s.fetch_tier == 2 %} <span class="pill warn">blocked</span>{% endif %}
+        {% if s.sitemap_ok %}<br><span class="small">sitemap ok</span>{% endif %}
+      </td>
+      <td class="num">{{ s.confirmed }}{% if s.listings != s.confirmed %} <span class="meta small">/ {{ s.listings }}</span>{% endif %}</td>
+      <td class="num {% if s.open_violations %}bad{% endif %}">{{ s.open_violations }}</td>
+      <td class="meta">{% if s.last_checked %}{{ s.last_checked.strftime('%m-%d %H:%M') }}{% else %}—{% endif %}</td>
+      <td class="row">
+        {% if user.is_admin %}
+          {% if s.excluded %}
+            <form method="post" action="/sellers/{{ s.id }}/include">
+              <input type="hidden" name="csrf_token" value="{{ csrf }}">
+              <button type="submit" class="secondary small">re-enable</button>
+            </form>
+          {% else %}
+            <form method="post" action="/sellers/{{ s.id }}/exclude"
+                  onsubmit="return confirm('Exclude {{ s.domain }} from all future scanning?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf }}">
+              <input type="hidden" name="reason" value="excluded from the Sellers page">
+              <button type="submit" class="no small">exclude</button>
+            </form>
+            {% if s.listings %}
+            <form method="post" action="/sellers/{{ s.id }}/purge"
+                  onsubmit="return confirm('Delete all {{ s.listings }} listing(s) for {{ s.domain }}, including price history and evidence?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf }}">
+              <button type="submit" class="secondary small">purge listings</button>
+            </form>
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}</tbody>
+</table>
+{% endblock %}

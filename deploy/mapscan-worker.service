@@ -1,0 +1,48 @@
+# /etc/systemd/system/mapscan-worker.service
+#
+# The arq worker: nightly recheck, discovery sweep, paste-a-URL domain scans.
+# max_jobs=2 in WorkerSettings plus MemoryMax here are the two guards that keep
+# a runaway crawl from OOMing a small, swapless box. Example unit; see
+# mapscan-api.service for the assumed layout.
+
+[Unit]
+Description=MAP Scan crawl worker (arq)
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+Requires=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=mapscan
+Group=mapscan
+WorkingDirectory=/opt/mapscan
+EnvironmentFile=/opt/mapscan/.env
+ExecStart=/opt/mapscan/venv/bin/arq worker.tasks.WorkerSettings
+Restart=on-failure
+RestartSec=10
+
+MemoryMax=384M
+MemoryHigh=300M
+TasksMax=96
+
+# Crawling is I/O bound; deprioritise it so it can never starve other
+# services on the host of CPU.
+Nice=10
+CPUWeight=50
+IOWeight=50
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/mapscan/evidence
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mapscan-worker
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ listing.sku }} @ {{ listing.domain }}{% endblock %}
+{% block content %}
+<h1>{{ listing.product_title }}</h1>
+<p>
+  <span class="mono">{{ listing.sku }}</span> &middot;
+  <a href="{{ listing.url }}" rel="noopener nofollow" target="_blank">{{ listing.url }}</a><br>
+  <span class="meta">
+    {{ listing.domain }}
+    {% if listing.marketplace_seller %}
+    &middot; seller
+    {% if listing.discovered_via == 'ebay' %}
+    <a href="https://www.ebay.com/usr/{{ listing.marketplace_seller|urlencode }}"
+       rel="noopener nofollow" target="_blank"><strong>{{ listing.marketplace_seller }}</strong></a>
+    {% else %}<strong>{{ listing.marketplace_seller }}</strong>{% endif %}
+    {% endif %}
+    {% if listing.is_authorized %}<span class="pill done">authorized dealer</span>
+    {% else %}<span class="pill warn">not marked authorized</span>{% endif %}
+    &middot; status <strong>{{ listing.status }}</strong>
+    &middot; match {{ '%.0f'|format(listing.match_score or 0) }}
+    &middot; fetch tier {{ listing.fetch_tier }}
+    &middot; MAP <strong>${{ '%.2f'|format(listing.map_price) }}</strong>
+    {% if listing.msrp %}&middot; MSRP ${{ '%.2f'|format(listing.msrp) }}{% endif %}
+  </span>
+</p>
+{% if listing.last_error %}<p class="bad">Last fetch error: {{ listing.last_error }}</p>{% endif %}
+{% if listing.retired_at %}
+<p class="alert warn">
+  Not tracked since {{ listing.retired_at.strftime('%Y-%m-%d') }} — excluded from
+  nightly checks.{% if listing.reviewed_note %} <span class="meta">({{ listing.reviewed_note }})</span>{% endif %}
+  This survives re-scans, so a scan finding the URL again will not silently
+  resume it.
+</p>
+{% endif %}
+
+<div class="row" style="margin:.75rem 0">
+  {% if listing.retired_at %}
+  <form method="post" action="/listings/{{ listing.id }}/track">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button type="submit" class="ok small">resume tracking</button>
+  </form>
+  {% endif %}
+  {% if not listing.retired_at %}
+  <form method="post" action="/listings/{{ listing.id }}/untrack"
+        onsubmit="return confirm('Stop checking this URL? Price history and resolved violations are kept.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button type="submit" class="secondary small">stop tracking (keep history)</button>
+  </form>
+  {% endif %}
+  <form method="post" action="/listings/{{ listing.id }}/delete"
+        onsubmit="return confirm('Delete this listing entirely? Price history, violations and evidence files are permanently removed.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button type="submit" class="no small">delete listing and all history</button>
+  </form>
+</div>
+
+<h2>Violations</h2>
+{% if not violations %}<p class="empty">No violations recorded for this listing.</p>{% else %}
+<table class="narrow align-left">
+  <thead><tr><th>#</th><th>Status</th><th>MAP</th><th>Opening</th><th>Lowest</th>
+             <th>Under by</th><th>Opened</th><th>Resolved</th></tr></thead>
+  <tbody>{% for v in violations %}
+    <tr><td class="mono">{{ v.id }}</td>
+        <td><span class="pill {{ v.status }}">{{ v.status }}</span></td>
+        <td class="num">{{ v.map_at_open|money }}</td>
+        <td class="num">{{ v.opening_price|money }}</td>
+        <td class="num bad">{{ v.lowest_price|money }}</td>
+        <td class="num">{{ v.worst_delta_pct|pct }}</td>
+        <td class="meta">{{ v.opened_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td class="meta">{% if v.resolved_at %}{{ v.resolved_at.strftime('%Y-%m-%d %H:%M') }}{% else %}—{% endif %}</td>
+    </tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+
+<h2>Evidence</h2>
+{% if not evidence %}<p class="empty">No evidence captured.</p>{% else %}
+<table class="narrow align-left">
+  <thead><tr><th>Captured</th><th>Price</th><th>MAP</th><th>Tier</th><th>SHA-256</th><th>Artifacts</th></tr></thead>
+  <tbody>{% for e in evidence %}
+    <tr><td class="meta">{{ e.captured_at.strftime('%Y-%m-%d %H:%M UTC') }}</td>
+        <td class="num">{% if e.observed_price %}${{ '%.2f'|format(e.observed_price) }}{% else %}—{% endif %}</td>
+        <td class="num">{% if e.map_price %}${{ '%.2f'|format(e.map_price) }}{% else %}—{% endif %}</td>
+        <td class="meta">{{ e.source_tier or '—' }}</td>
+        <td class="mono small">
+          <div title="html snapshot">{{ (e.sha256_html or '—')[:16] }}</div>
+          {% if e.screenshot_path %}
+          <div class="meta" title="screenshot">{{ (e.sha256_screenshot or 'not hashed')[:16] }}</div>
+          {% endif %}
+        </td>
+        <td>
+          {% if e.screenshot_path %}
+          {# Full-page captures run to ~5000px, so the thumbnail is a crop
+             anchored at the top; the link opens the untouched original. #}
+          <a href="/evidence/{{ e.id }}/screenshot" target="_blank" rel="noopener"
+             class="shot-thumb" title="Open full-resolution capture">
+            <img src="/evidence/{{ e.id }}/screenshot" loading="lazy"
+                 alt="Page as captured {{ e.captured_at.strftime('%Y-%m-%d %H:%M UTC') }}">
+          </a>
+          {% endif %}
+          <div class="small">
+            {% if e.screenshot_path %}<a href="/evidence/{{ e.id }}/screenshot" target="_blank" rel="noopener">screenshot</a>{% endif %}
+            {% if e.html_path %}<a href="/evidence/{{ e.id }}/html">html</a>{% endif %}
+            {% if not e.screenshot_path and not e.html_path %}<span class="meta">none</span>{% endif %}
+          </div>
+        </td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+
+<h2>Price history</h2>
+{% if not history %}<p class="empty">No observations yet.</p>{% else %}
+<table class="narrow align-left">
+  <thead><tr><th>Observed</th><th>Price</th><th>Stock</th><th>Extraction</th><th>Fetch</th><th>Below MAP</th></tr></thead>
+  <tbody>{% for h in history %}
+    <tr class="{% if h.below_map %}row-bad{% endif %}">
+      <td class="meta">{{ h.observed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td class="num">{% if h.price %}${{ '%.2f'|format(h.price) }}{% else %}<em>none</em>{% endif %}</td>
+      <td class="meta">{% if h.in_stock is none %}?{% elif h.in_stock %}in{% else %}out{% endif %}</td>
+      <td class="meta">{{ h.extraction_tier }}</td>
+      <td class="meta">{{ h.fetch_tier or '—' }}</td>
+      <td>{% if h.below_map %}<span class="pill open">yes</span>{% else %}no{% endif %}</td>
+    </tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+{% endblock %}

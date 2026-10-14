@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<section class="tiles">
+  <div class="tile {% if stats.open_violations %}bad{% endif %}">
+    <span class="n">{{ stats.open_violations }}</span><span class="l">open violations</span></div>
+  <div class="tile"><span class="n">{{ stats.confirmed }}</span><span class="l">tracked listings</span></div>
+  <div class="tile {% if stats.review %}warn{% endif %}">
+    <span class="n">{{ stats.review }}</span><span class="l">awaiting review</span></div>
+  <div class="tile"><span class="n">{{ stats.products }}</span><span class="l">active products</span></div>
+  <div class="tile"><span class="n">{{ stats.sellers }}</span><span class="l">sellers seen</span></div>
+  <div class="tile"><span class="n">{{ stats.resolved_30d }}</span><span class="l">resolved (30d)</span></div>
+</section>
+
+<p class="meta">
+  Last nightly recheck:
+  {% if stats.last_recheck %}{{ stats.last_recheck.strftime('%Y-%m-%d %H:%M UTC') }}
+  {% else %}<em>never run yet</em>{% endif %}
+  &middot; extraction fallback:
+  {% if llm_on %}{{ extraction_model }}{% else %}<em>disabled</em>{% endif %}
+  &middot; fetch vendor:
+  {% if vendor %}{{ vendor }}{% else %}<em>tier 1 only (free)</em>{% endif %}
+</p>
+
+<h2>Open violations</h2>
+{% if not violations %}
+  <p class="empty">No open violations.</p>
+{% else %}
+<table>
+  <thead><tr>
+    <th>SKU</th><th>Product</th><th>Seller</th><th>Type</th><th>MAP</th>
+    <th>Lowest seen</th><th>Under by</th><th>Opened</th><th>Evidence</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for v in violations %}
+    <tr class="{% if not v.acknowledged_at %}unack{% endif %}">
+      <td class="mono">{{ v.sku }}</td>
+      <td>{{ v.title }}</td>
+      <td><a href="{{ v.url }}" rel="noopener nofollow" target="_blank">{{ v.domain }}</a></td>
+      <td>{% if v.kind == 'unauthorized' %}<span class="pill open" title="No reseller is authorised on this channel, so the listing itself is the violation">unauthorized</span>{% else %}<span class="pill">MAP</span>{% endif %}</td>
+      <td class="num">{{ v.map_at_open|money }}</td>
+      <td class="num bad">{{ v.lowest_price|money }}</td>
+      <td class="num bad">{{ v.worst_delta_pct|pct }}</td>
+      <td class="meta">{{ v.opened_at.strftime('%Y-%m-%d') }}</td>
+      <td class="num">{{ v.evidence_count }}</td>
+      <td><a href="/listings/{{ v.listing_id }}">detail</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>Search budget</h2>
+{% if budget %}
+<table class="narrow">
+  <thead><tr><th>Provider</th><th>Period</th><th>Queries used</th></tr></thead>
+  <tbody>{% for b in budget %}
+    <tr><td>{{ b.provider }}</td><td class="meta">{{ b.period }}</td><td class="num">{{ b.used }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}<p class="empty">No searches run yet.</p>{% endif %}
+
+<h2>Recent jobs</h2>
+<table class="narrow">
+  <thead><tr><th>#</th><th>Kind</th><th>Target</th><th>Status</th><th>Progress</th><th>Created</th></tr></thead>
+  <tbody>{% for j in jobs %}
+    <tr><td class="mono">{{ j.id }}</td><td>{{ j.kind }}</td>
+        <td class="trunc">{{ j.target or '' }}</td>
+        <td><span class="pill {{ j.status }}">{{ j.status }}</span></td>
+        <td class="meta mono">{{ j.progress }}</td>
+        <td class="meta">{{ j.created_at.strftime('%m-%d %H:%M') }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endblock %}

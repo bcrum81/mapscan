@@ -1,0 +1,44 @@
+# /etc/systemd/system/mapscan-api.service
+#
+# Example unit. Assumes the app lives in /opt/mapscan, runs as a dedicated
+# `mapscan` system user, and sits behind a TLS reverse proxy on localhost.
+# MemoryMax keeps it a good neighbour on a small shared VPS; adjust to taste.
+
+[Unit]
+Description=MAP Scan API
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=mapscan
+Group=mapscan
+WorkingDirectory=/opt/mapscan
+EnvironmentFile=/opt/mapscan/.env
+ExecStart=/opt/mapscan/venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 --port 8013 \
+    --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=5
+
+MemoryMax=256M
+MemoryHigh=200M
+TasksMax=64
+
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/mapscan/evidence
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mapscan-api
+
+[Install]
+WantedBy=multi-user.target

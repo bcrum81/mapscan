@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}MAP Scan{% endblock %}</title>
+<link rel="stylesheet" href="/static/app.css?v={{ asset_v }}">
+</head>
+<body>
+<header>
+  <strong>MAP Scan</strong>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/violations">Violations</a>
+    <a href="/review">Review{% if review_count %} ({{ review_count }}){% endif %}</a>
+    <a href="/products">Products</a>
+    <a href="/sellers">Sellers</a>
+    <a href="/scan">Scan</a>
+    {% if user and user.is_admin %}<a href="/users">Users</a>
+    <a href="/settings">Settings</a>{% endif %}
+  </nav>
+  {% if user %}
+  <span class="who meta">
+    {{ user.email }}
+    <a href="/change-password">password</a>
+    <a href="/logout">sign out</a>
+  </span>
+  {% endif %}
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer>{{ brand_name }} &middot; internal &middot; <a href="/about">about this crawler</a></footer>
+<script src="/static/app.js?v={{ asset_v }}"></script>
+</body>
+</html>

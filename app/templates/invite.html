@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set your password — MAP Scan</title><link rel="stylesheet" href="/static/app.css?v={{ asset_v }}">
+</head><body class="centered">
+<main class="auth">
+  <h1>MAP Scan</h1>
+  {% if invalid %}
+    <p class="alert bad">
+      This link is not valid. It may have already been used, or expired — links
+      last 72 hours. Ask an administrator to send a fresh one.
+    </p>
+    <p class="meta small"><a href="/login">Go to sign in</a></p>
+  {% else %}
+    <p class="meta">
+      {% if purpose == 'reset' %}Reset the password for{% else %}Set up the account for{% endif %}
+      <strong>{{ email }}</strong>
+    </p>
+    {% if error %}<p class="alert bad">{{ error }}</p>{% endif %}
+    <form method="post" action="/invite/{{ token }}">
+      <label>Choose a password
+        <input type="password" name="new_password" autocomplete="new-password"
+               minlength="12" required autofocus></label>
+      <label>Confirm password
+        <input type="password" name="confirm" autocomplete="new-password"
+               minlength="12" required></label>
+      <button type="submit">Set password and sign in</button>
+    </form>
+    <p class="meta small">
+      At least 12 characters. This link works once and expires 72 hours after it
+      was issued.
+    </p>
+  {% endif %}
+</main>
+</body></html>

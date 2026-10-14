@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+{% block content %}
+<h1>Products <span class="meta">({{ rows|length }})</span></h1>
+<p class="meta">Loaded from the spreadsheet via <code>scripts/import_products.py</code>.</p>
+<table>
+  <thead><tr>
+    <th>SKU</th><th>Title</th><th>UPC</th><th>MSRP</th><th>MAP</th>
+    <th>Tracked</th><th>Review</th><th>Open viol.</th><th>Active</th>
+  </tr></thead>
+  <tbody>{% for p in rows %}
+    <tr class="{% if p.open_violations %}row-bad{% endif %}">
+      <td class="mono">{{ p.sku }}</td>
+      <td>{{ p.title }}</td>
+      <td class="mono small">{{ p.upc or '—' }}</td>
+      <td class="num">{% if p.msrp %}${{ '%.2f'|format(p.msrp) }}{% else %}—{% endif %}</td>
+      <td class="num"><strong>${{ '%.2f'|format(p.map_price) }}</strong></td>
+      <td class="num">{{ p.confirmed }}</td>
+      <td class="num">{{ p.review }}</td>
+      <td class="num {% if p.open_violations %}bad{% endif %}">{{ p.open_violations }}</td>
+      <td>{% if p.active %}yes{% else %}<span class="meta">no</span>{% endif %}</td>
+    </tr>
+  {% endfor %}</tbody>
+</table>
+{% endblock %}

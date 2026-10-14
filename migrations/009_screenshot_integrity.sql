@@ -1,0 +1,11 @@
+-- 009: hash the screenshot too.
+--
+-- evidence.sha256_html made the HTML snapshot tamper-evident from the start,
+-- but the screenshot -- the artifact a dealer actually looks at -- had no
+-- integrity check at all. Half-verifiable evidence is a weak position to argue
+-- from, so the image gets the same treatment.
+--
+-- Nullable and unbackfilled on purpose: rows captured before this migration
+-- have no stored hash, and inventing one now would only prove the file matches
+-- itself today. A NULL honestly says "not hashed at capture time".
+ALTER TABLE evidence ADD COLUMN IF NOT EXISTS sha256_screenshot text;

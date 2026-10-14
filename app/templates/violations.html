@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Violations{% endblock %}
+{% block content %}
+<h1>Violations</h1>
+<nav class="tabs">
+  {% for s in ['open','resolved','all'] %}
+    <a href="/violations?status={{ s }}" class="{% if status == s %}active{% endif %}">{{ s }}</a>
+  {% endfor %}
+</nav>
+{% if not rows %}<p class="empty">Nothing here.</p>{% else %}
+<table class="align-left">
+  <thead><tr>
+    <th>SKU</th><th>Product</th><th>Seller</th><th>Type</th><th>MAP</th><th>Opened at</th>
+    <th>Lowest</th><th>Under by</th><th>Opened</th><th>Resolved</th><th>Ev.</th><th></th>
+  </tr></thead>
+  <tbody>{% for v in rows %}
+    <tr>
+      <td class="mono">{{ v.sku }}</td>
+      <td>{{ v.title }}</td>
+      <td>
+        <a href="{{ v.url }}" rel="noopener nofollow" target="_blank">{{ v.domain }}</a>
+        {% if v.marketplace_seller %}
+        {# On a marketplace the domain is the same for everyone; the username is
+           who the notice would actually name. Links to their storefront so the
+           rest of their listings are one click away. #}
+        <div class="seller-handle">
+          {% if v.discovered_via == 'ebay' %}
+          <a href="https://www.ebay.com/usr/{{ v.marketplace_seller|urlencode }}"
+             rel="noopener nofollow" target="_blank"
+             title="Open this seller's eBay storefront">{{ v.marketplace_seller }}</a>
+          {% else %}{{ v.marketplace_seller }}{% endif %}
+        </div>
+        {% elif v.discovered_via == 'ebay' %}
+        <div class="seller-handle meta">seller name removed</div>
+        {% endif %}
+      </td>
+      <td>{% if v.kind == 'unauthorized' %}<span class="pill open" title="No reseller is authorised on this channel, so the listing itself is the violation">unauthorized</span>{% else %}<span class="pill">MAP</span>{% endif %}</td>
+      <td class="num">{{ v.map_at_open|money }}</td>
+      <td class="num">{{ v.opening_price|money }}</td>
+      <td class="num bad">{{ v.lowest_price|money }}</td>
+      <td class="num bad">{{ v.worst_delta_pct|pct }}</td>
+      <td class="meta">{{ v.opened_at.strftime('%Y-%m-%d') }}</td>
+      <td class="meta">{% if v.resolved_at %}{{ v.resolved_at.strftime('%Y-%m-%d') }}{% else %}—{% endif %}</td>
+      <td class="num">{{ v.evidence_count }}</td>
+      <td><a href="/listings/{{ v.listing_id }}"
+             {% if v.shot_evidence_id %}class="has-shot"
+             data-shot="/evidence/{{ v.shot_evidence_id }}/screenshot"{% endif %}
+             >detail</a></td>
+    </tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+{% endblock %}

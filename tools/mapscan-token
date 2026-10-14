@@ -1,0 +1,11 @@
+#!/bin/sh
+# Print the eBay verification token + endpoint URL.
+# Install on the server's PATH; run as:   mapscan-token
+# APP_DIR defaults to /opt/mapscan.
+set -e
+APP_DIR="${APP_DIR:-/opt/mapscan}"
+cd "$APP_DIR"
+set -a
+. "$APP_DIR/.env"
+set +a
+exec "$APP_DIR/venv/bin/python" "$APP_DIR/tools/show_ebay_token.py"

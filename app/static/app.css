@@ -1,0 +1,171 @@
+:root{
+  --bg:#fbfaf8; --fg:#1c1a17; --muted:#6c6660; --line:#e2ded8;
+  --bad:#a3231b; --bad-bg:#fdf1f0; --warn:#8a5a08; --warn-bg:#fdf6e8;
+  --ok:#1d6b3f; --ok-bg:#eef7f1; --accent:#2c4a7c;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#16171a; --fg:#e8e6e3; --muted:#9a948d; --line:#2e3034;
+    --bad:#ff8a80; --bad-bg:#2a1a19; --warn:#e0b463; --warn-bg:#2a2318;
+    --ok:#7fcf9f; --ok-bg:#18251d; --accent:#8fb4e8;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{display:flex;gap:1.5rem;align-items:baseline;padding:.9rem 1.5rem;
+  border-bottom:1px solid var(--line);flex-wrap:wrap}
+header strong{font-size:1.05rem;letter-spacing:.02em}
+nav a{margin-right:1rem;color:var(--accent);text-decoration:none}
+nav a:hover{text-decoration:underline}
+main{padding:1.5rem;max-width:1400px}
+footer{padding:1.5rem;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);margin-top:3rem}
+h1{font-size:1.5rem;margin:0 0 .5rem}
+h2{font-size:1.1rem;margin:2rem 0 .6rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+a{color:var(--accent)}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.small{font-size:.82rem}
+.meta{color:var(--muted);font-size:.85rem}
+.empty{color:var(--muted);font-style:italic}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.bad{color:var(--bad)}
+.trunc{max-width:22rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin:1rem 0}
+.tile{border:1px solid var(--line);border-radius:8px;padding:.85rem 1rem;background:transparent}
+.tile.bad{border-color:var(--bad);background:var(--bad-bg)}
+.tile.warn{border-color:var(--warn);background:var(--warn-bg)}
+.tile .n{display:block;font-size:1.8rem;font-weight:600;font-variant-numeric:tabular-nums}
+.tile .l{display:block;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+
+table{width:100%;border-collapse:collapse;margin:.5rem 0 1.5rem}
+table.narrow{font-size:.9rem}
+th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+tr.row-bad td{background:var(--bad-bg)}
+
+/* Left-aligned tables. Mixed left/right alignment reads badly once rows vary in
+   height (an evidence row carrying a thumbnail is several lines tall), because
+   a right-aligned figure ends up floating away from the label it belongs to.
+   tabular-nums is kept so columns of prices still line up digit-for-digit. */
+table.align-left th,table.align-left td,table.align-left .num{text-align:left}
+table.align-left .num{font-variant-numeric:tabular-nums}
+tr.unack td{font-weight:500}
+
+.pill{display:inline-block;padding:.1rem .45rem;border-radius:99px;font-size:.75rem;
+  border:1px solid var(--line)}
+.pill.open,.pill.failed{color:var(--bad);border-color:var(--bad);background:var(--bad-bg)}
+.pill.running,.pill.queued,.pill.warn,.pill.inconclusive{color:var(--warn);border-color:var(--warn);background:var(--warn-bg)}
+.pill.done,.pill.resolved{color:var(--ok);border-color:var(--ok);background:var(--ok-bg)}
+
+.card{border:1px solid var(--line);border-radius:8px;padding:1rem;margin:0 0 1rem}
+.card-head{display:flex;gap:1rem;align-items:flex-start}
+.score{font-size:1.5rem;font-weight:600;min-width:2.5rem;text-align:center;
+  color:var(--warn);font-variant-numeric:tabular-nums}
+table.compare{font-size:.9rem;margin:.75rem 0}
+table.compare td:first-child{color:var(--muted);width:6rem}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--warn-bg);
+  padding:.6rem;border-radius:6px;overflow-x:auto}
+
+form.decide{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.75rem}
+form.decide input[type=text]{flex:1;min-width:12rem}
+form.scan{display:flex;gap:.5rem;margin:1rem 0;flex-wrap:wrap}
+form.scan input{flex:1;min-width:20rem}
+input{padding:.5rem .6rem;border:1px solid var(--line);border-radius:6px;
+  background:var(--bg);color:var(--fg);font:inherit}
+button{padding:.5rem .9rem;border-radius:6px;border:1px solid var(--line);
+  background:var(--fg);color:var(--bg);font:inherit;cursor:pointer}
+button.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+button.no{background:transparent;color:var(--bad);border-color:var(--bad)}
+button.secondary{background:transparent;color:var(--fg)}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:.6rem;flex-wrap:wrap}
+.tabs a{margin-right:1rem;text-decoration:none}
+.tabs a.active{font-weight:600;border-bottom:2px solid var(--accent)}
+.pager{display:flex;gap:1.5rem;margin:1.5rem 0}
+#scan-status{margin:.5rem 0;font-size:.9rem}
+
+/* --- auth pages --- */
+body.centered{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
+main.auth{max-width:24rem;width:100%;border:1px solid var(--line);border-radius:10px;padding:1.75rem}
+main.auth h1{margin:0 0 .25rem}
+main.auth form{display:flex;flex-direction:column;gap:.85rem;margin:1.25rem 0}
+main.auth label{display:flex;flex-direction:column;gap:.3rem;font-size:.85rem;color:var(--muted)}
+main.auth input{font-size:1rem}
+main.auth button{margin-top:.35rem;padding:.6rem}
+.alert{padding:.6rem .8rem;border-radius:6px;font-size:.9rem;margin:.75rem 0}
+.alert.bad{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad)}
+.alert.warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+.alert.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)}
+header .who{margin-left:auto;display:flex;gap:.75rem;align-items:baseline}
+tr.inactive td{opacity:.5}
+label.inline{display:inline-flex;flex-direction:row;gap:.35rem;align-items:center}
+button.small{padding:.25rem .5rem;font-size:.8rem}
+td.row form{display:inline}
+.linkbox{display:flex;flex-direction:column;gap:.4rem;border:1px solid var(--warn);
+  background:var(--warn-bg);border-radius:8px;padding:.85rem;margin:.75rem 0}
+.linkbox input{font-family:ui-monospace,monospace;font-size:.85rem}
+.linkbox button{align-self:flex-start}
+
+/* --- settings --- */
+table.settings{width:100%;margin:.5rem 0 1.25rem}
+table.settings th{width:13rem;text-align:left;vertical-align:top;padding-top:.7rem;
+  font-size:.85rem;text-transform:none;letter-spacing:0;color:var(--fg);font-weight:500}
+table.settings td{padding:.35rem .6rem}
+table.settings input[type=text],table.settings input[type=password],
+table.settings input[type=email],table.settings select,table.settings textarea{
+  width:100%;max-width:34rem;font-family:inherit}
+table.settings textarea{font-family:ui-monospace,monospace;font-size:.8rem}
+h3{font-size:.95rem;margin:1.25rem 0 .4rem;color:var(--muted)}
+
+/* Evidence thumbnails. Full-page captures are tall (4000-5000px is normal for
+   a dealer product page), so the tile shows the top of the page at a readable
+   width and the anchor opens the original. object-position keeps the crop at
+   the top, where the product title and price usually sit. */
+a.shot-thumb{display:block;width:132px;height:92px;overflow:hidden;position:relative;
+  border:1px solid var(--line);border-radius:3px;margin-bottom:.35rem;cursor:zoom-in}
+a.shot-thumb img{width:100%;height:100%;object-fit:cover;object-position:top center;
+  display:block}
+a.shot-thumb:hover{border-color:var(--accent)}
+
+/* Full-size viewer. The capture is tall, so the overlay scrolls rather than
+   shrinking the page to illegibility -- the point of opening it is to read the
+   price off the dealer's own page. */
+.lightbox{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);
+  overflow:auto;padding:2.5rem 1rem 3rem;cursor:zoom-out}
+.lightbox[hidden]{display:none}
+.lightbox-inner{max-width:1100px;margin:0 auto}
+.lightbox img{display:block;width:100%;height:auto;cursor:default;
+  box-shadow:0 2px 24px rgba(0,0,0,.5);background:#fff}
+.lightbox-close{position:fixed;top:.6rem;right:1rem;z-index:51;
+  font-size:1.6rem;line-height:1;padding:.1rem .6rem;cursor:pointer;
+  background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)}
+.lightbox-close:hover{background:rgba(255,255,255,.15)}
+
+/* Hover preview for the violations list. Shows the captured page next to the
+   "detail" link so a violation can be eyeballed without leaving the list.
+   Anchored to the top of the capture, where the price sits. */
+.hover-shot{position:fixed;z-index:60;width:300px;height:380px;overflow:hidden;
+  border:1px solid var(--line);border-radius:4px;background:var(--bg);
+  box-shadow:0 4px 20px rgba(0,0,0,.35);pointer-events:none}
+.hover-shot[hidden]{display:none}
+.hover-shot img{width:100%;height:100%;object-fit:cover;object-position:top center;
+  display:block}
+.hover-shot .cap{position:absolute;left:0;right:0;bottom:0;padding:.2rem .45rem;
+  font-size:.72rem;color:#fff;background:rgba(0,0,0,.65)}
+a.has-shot{border-bottom:1px dotted currentColor}
+
+/* The eBay verification token, shown in full because it must be transcribed
+   into eBay's portal. Every other secret here stays write-only. */
+.reveal{margin-top:.5rem;padding:.5rem .6rem;border:1px dashed var(--line);
+  border-radius:4px;background:var(--warn-bg)}
+.reveal>div{margin:.25rem 0;display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap}
+.reveal .meta{min-width:9rem}
+code.copyable{font-size:.82rem;padding:.1rem .3rem;border:1px solid var(--line);
+  border-radius:3px;background:var(--bg);user-select:all;word-break:break-all}
+
+/* Marketplace username under the domain in the violations list. On eBay every
+   row reads "ebay.com", so the handle is the part that identifies who a notice
+   would name. */
+.seller-handle{font-size:.82rem;margin-top:.1rem}
+.seller-handle.meta{font-style:italic}

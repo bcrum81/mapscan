@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Review queue{% endblock %}
+{% block content %}
+<h1>Review queue <span class="meta">({{ total }} pending)</span></h1>
+<p class="meta">
+  Candidates scored between the auto-reject and auto-confirm thresholds. A false
+  positive here means accusing a dealer of something they did not do, so these
+  need a human decision.
+</p>
+
+{% if not rows %}<p class="empty">Nothing awaiting review.</p>{% endif %}
+
+{% for r in rows %}
+<article class="card" id="listing-{{ r.id }}">
+  <div class="card-head">
+    <span class="score">{{ '%.0f'|format(r.match_score or 0) }}</span>
+    <div>
+      <strong>{{ r.title }}</strong> <span class="mono meta">{{ r.sku }}</span><br>
+      <a href="{{ r.url }}" rel="noopener nofollow" target="_blank">{{ r.url }}</a>
+      <span class="meta">&middot; {{ r.domain }} &middot; via {{ r.discovered_via }}</span>
+    </div>
+  </div>
+  <table class="compare">
+    <tr><th></th><th>Ours</th><th>Seen on page</th></tr>
+    <tr><td>Title</td><td>{{ r.title }}</td><td>{{ r.title_seen or '—' }}</td></tr>
+    <tr><td>SKU</td><td class="mono">{{ r.sku }}</td><td class="mono">{{ r.sku_seen or '—' }}</td></tr>
+    <tr><td>UPC</td><td class="mono">{{ r.upc or '—' }}</td><td class="mono">{{ r.upc_seen or '—' }}</td></tr>
+    <tr><td>MAP</td><td class="num">${{ '%.2f'|format(r.map_price) }}</td><td>—</td></tr>
+  </table>
+  <details><summary class="meta">match signals</summary>
+    <pre class="mono small">{{ r.match_signals }}</pre></details>
+  <form class="decide" data-listing="{{ r.id }}">
+    <input type="text" name="note" placeholder="note (optional)">
+    <button type="submit" name="decision" value="confirmed" class="ok">Confirm — track this</button>
+    <button type="submit" name="decision" value="rejected" class="no">Reject — not our product</button>
+  </form>
+</article>
+{% endfor %}
+
+<nav class="pager">
+  {% if page > 0 %}<a href="/review?page={{ page - 1 }}">&larr; previous</a>{% endif %}
+  {% if (page + 1) * per_page < total %}<a href="/review?page={{ page + 1 }}">next &rarr;</a>{% endif %}
+</nav>
+{% endblock %}

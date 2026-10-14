@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Scan a dealer{% endblock %}
+{% block content %}
+<h1>Scan a dealer domain</h1>
+
+{% if not product_count %}
+<p class="alert bad">
+  <strong>No products loaded.</strong> Scans match sitemap URLs against your
+  product titles, so with an empty catalogue every scan will return zero
+  candidates no matter how well the dealer's site responds. Import the
+  spreadsheet first:
+  <code>venv/bin/python -m scripts.import_products products.xlsx --commit</code>
+</p>
+{% endif %}
+<p class="meta">
+  <strong>Paste a brand or search page if the dealer has one</strong> — e.g.
+  <code>bigdealer.example/s/your-brand</code> or
+  <code>somedealer.com/collections/your-brand</code>. That page is already
+  scoped to your products, so the scan walks it (following <code>rel="next"</code>
+  for pagination) and finds only what matters — a handful of requests instead of
+  enumerating the dealer's whole catalogue.
+</p>
+<p class="meta">
+  Paste a bare domain instead and the scan falls back to reading their sitemap,
+  filtering it to product pages, and matching slugs against your catalogue. That
+  works everywhere but costs far more requests on a large retailer.
+</p>
+
+<form id="scan-form" class="scan">
+  <input type="url" name="url" id="scan-url" required
+         placeholder="https://somedealer.com/  (or any product URL on that site)">
+  <button type="submit">Scan domain</button>
+</form>
+<div id="scan-status"></div>
+
+<h2>Manual triggers</h2>
+<div class="row">
+  <button class="secondary" data-post="/scan/recheck">Re-check all confirmed listings now</button>
+  <button class="secondary" data-post="/scan/discovery">Run discovery sweep now</button>
+  <button class="secondary" data-post="/scan/ebay">Sweep eBay now</button>
+</div>
+<p class="meta">
+  Both also run on schedule: recheck nightly at 03:20 UTC, discovery sweep at
+  07:00 UTC. The sweep self-limits to your Brave Search monthly budget.
+</p>
+
+<h2>Jobs</h2>
+<table id="jobs">
+  <thead><tr><th>#</th><th>Kind</th><th>Target</th><th>Status</th>
+             <th>Progress</th><th>Created</th><th>Error</th><th></th></tr></thead>
+  <tbody>{% for j in jobs %}
+    <tr data-job="{{ j.id }}">
+      <td class="mono">{{ j.id }}</td>
+      <td>{{ j.kind }}</td>
+      <td class="trunc">{{ j.target or '' }}</td>
+      <td class="js-status"><span class="pill {{ j.status }}">{{ j.status }}</span></td>
+      <td class="meta mono small js-progress">{{ j.progress }}</td>
+      <td class="meta">{{ j.created_at.strftime('%m-%d %H:%M') }}</td>
+      <td class="bad small">{{ j.error or '' }}</td>
+      <td>
+        {% if j.status != 'running' %}
+        <form method="post" action="/jobs/{{ j.id }}/delete">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <button type="submit" class="secondary small">remove</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}</tbody>
+</table>
+{% endblock %}

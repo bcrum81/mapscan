@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+
+{% if notice %}<p class="alert ok">{{ notice }}</p>{% endif %}
+{% if error %}<p class="alert bad">{{ error }}</p>{% endif %}
+{% if not encryption_ok %}
+  <p class="alert bad">
+    <strong>SETTINGS_KEY is not configured on the server.</strong> Secrets cannot
+    be stored until it is. Generate one and add it to <code>.env</code>,
+    then restart the API and worker.
+  </p>
+{% endif %}
+
+<p class="meta">
+  Credentials entered here are encrypted at rest and never written to a file or
+  the repository. Secret fields are never displayed back — a blank field means
+  “leave unchanged”. Type <code>__CLEAR__</code> to remove a stored value.
+  Anything set here overrides the environment.
+</p>
+
+<h2>Brave Search</h2>
+<p class="meta">
+  Brave is metered, and a query returning zero results still costs one. The
+  planner keeps {{ '%.0f'|format(20) }}% of the monthly cap in reserve so an
+  ad-hoc scan is still possible late in the month.
+</p>
+<form method="post" action="/settings">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <table class="settings">
+    <tr>
+      <th>Brave API key</th>
+      <td><input type="password" name="brave_search_key" autocomplete="off"
+                 placeholder="{% if st.brave_search_key.present %}•••••••• stored ({{ st.brave_search_key.source }}){% else %}not set{% endif %}"></td>
+      <td class="meta small">{% if st.brave_search_key.present %}<span class="pill done">set</span>{% else %}<span class="pill open">missing — web discovery disabled</span>{% endif %}</td>
+    </tr>
+    <tr>
+      <th>Monthly query cap</th>
+      <td><input type="text" name="brave_monthly_cap" inputmode="numeric"
+                 value="{{ st.brave_monthly_cap.value or '' }}" placeholder="1000"></td>
+      <td class="meta small">Set this <em>below</em> your real plan limit.</td>
+    </tr>
+    <tr>
+      <th>Queries per sweep</th>
+      <td><input type="text" name="discovery_queries_per_run" inputmode="numeric"
+                 value="{{ st.get('discovery_queries_per_run', {}).get('value') or '' }}" placeholder="40"></td>
+      <td class="meta small">Upper bound per scheduled run.</td>
+    </tr>
+  </table>
+
+  <h2>Email delivery</h2>
+  <p class="meta">
+    Outbound SMTP (25/465/587) is <strong>blocked by many cloud hosts</strong>, in
+    which case SMTP will not work regardless of credentials. Use
+    <code>gmail_api</code> (your Workspace mailbox over HTTPS) or
+    <code>resend</code>.
+  </p>
+  <table class="settings">
+    <tr>
+      <th>Provider</th>
+      <td>
+        <select name="email_provider">
+          {% for p in ['manual','gmail_api','resend','smtp'] %}
+            <option value="{{ p }}" {% if st.email_provider.value == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td class="meta small"><code>manual</code> = show invite links in the UI instead of emailing.</td>
+    </tr>
+    <tr>
+      <th>From address</th>
+      <td><input type="email" name="email_from" value="{{ st.email_from.value or '' }}"
+                 placeholder="you@yourbrand.com"></td>
+      <td class="meta small">Must be a real mailbox on your domain.</td>
+    </tr>
+  </table>
+
+  <h3>Gmail API (Google Workspace)</h3>
+  <table class="settings">
+    <tr>
+      <th>Service account email</th>
+      <td><input type="text" name="gmail_sa_email" value="{{ st.gmail_sa_email.value or '' }}"
+                 placeholder="mapscan-mailer@your-project.iam.gserviceaccount.com"></td>
+      <td class="meta small">From the GCP service account JSON (<code>client_email</code>).</td>
+    </tr>
+    <tr>
+      <th>Send as</th>
+      <td><input type="text" name="gmail_send_as" value="{{ st.gmail_send_as.value or '' }}"
+                 placeholder="you@yourbrand.com"></td>
+      <td class="meta small">Workspace user the service account impersonates.</td>
+    </tr>
+    <tr>
+      <th>Service account private key</th>
+      <td><textarea name="gmail_sa_key" rows="4" autocomplete="off"
+            placeholder="{% if st.gmail_sa_key.present %}•••••••• stored{% else %}-----BEGIN PRIVATE KEY-----{% endif %}"></textarea></td>
+      <td class="meta small">
+        The <code>private_key</code> field from the JSON, PEM included.
+        {% if st.gmail_sa_key.present %}<span class="pill done">set</span>{% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <h3>Resend</h3>
+  <table class="settings">
+    <tr>
+      <th>Resend API key</th>
+      <td><input type="password" name="resend_key" autocomplete="off"
+                 placeholder="{% if st.resend_key.present %}•••••••• stored{% else %}re_...{% endif %}"></td>
+      <td class="meta small">{% if st.resend_key.present %}<span class="pill done">set</span>{% endif %}</td>
+    </tr>
+  </table>
+
+  <h2>eBay (unauthorised-channel monitoring)</h2>
+  <p class="meta">
+    eBay is marked <strong>prohibited</strong>, so <em>every</em> listing found
+    there is a violation regardless of price — no reseller is authorised.
+    Searches use the Browse API by GTIN, which is exact; a fuzzy title match is
+    not a sound basis for accusing a named seller.
+    Create an app at <code>developer.ebay.com</code> to get these.
+  </p>
+  <table class="settings">
+    <tr>
+      <th>App ID (Client ID)</th>
+      <td><input type="password" name="ebay_app_id" autocomplete="off"
+                 placeholder="{% if st.ebay_app_id.present %}•••••••• stored{% else %}not set{% endif %}"></td>
+      <td class="meta small">{% if st.ebay_app_id.present %}<span class="pill done">set</span>{% endif %}</td>
+    </tr>
+    <tr>
+      <th>Cert ID (Client Secret)</th>
+      <td><input type="password" name="ebay_cert_id" autocomplete="off"
+                 placeholder="{% if st.ebay_cert_id.present %}•••••••• stored{% else %}not set{% endif %}"></td>
+      <td class="meta small">{% if st.ebay_cert_id.present %}<span class="pill done">set</span>{% endif %}</td>
+    </tr>
+    <tr>
+      <th>Verification token</th>
+      <td><input type="password" name="ebay_verification_token" autocomplete="off"
+                 placeholder="{% if st.ebay_verification_token.present %}•••••••• stored{% else %}not set{% endif %}"></td>
+      <td class="meta small">
+        {% if st.ebay_verification_token.present %}<span class="pill done">set</span>{% endif %}
+        Required before eBay will activate a production keyset. 32&ndash;80 chars,
+        letters/digits/<code>_</code>/<code>-</code> only, and must match the token
+        entered on eBay's Alerts &amp; Notifications page exactly.
+        {% if ebay_token_value %}
+        <div class="reveal">
+          <strong>Paste into eBay:</strong>
+          <div><span class="meta">Endpoint URL</span>
+               <code class="copyable">{{ ebay_endpoint }}</code></div>
+          <div><span class="meta">Verification token</span>
+               <code class="copyable">{{ ebay_token_value }}</code></div>
+          <span class="meta">Shown in full because it has to be transcribed into
+          eBay's form. Leave the field above blank to keep this value.</span>
+        </div>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <th>Deletion endpoint URL</th>
+      <td><input type="text" name="ebay_deletion_endpoint" autocomplete="off"
+                 value="{{ st.get('ebay_deletion_endpoint', {}).get('value') or '' }}"
+                 placeholder="{{ ebay_default_endpoint }}"></td>
+      <td class="meta small">
+        Blank uses <code>{{ ebay_default_endpoint }}</code>. Only set this if the URL
+        registered with eBay differs &mdash; the challenge digest covers the URL as an
+        exact string, so a trailing slash or http/https mismatch breaks it.
+      </td>
+    </tr>
+    <tr>
+      <th>Products per sweep</th>
+      <td><input type="text" name="ebay_products_per_run" inputmode="numeric"
+                 value="{{ st.get('ebay_products_per_run', {}).get('value') or '' }}" placeholder="250"></td>
+      <td class="meta small">One GTIN search each. Token minting is capped at 1,000/day, so the token is cached.</td>
+    </tr>
+    <tr>
+      <th>Use sandbox</th>
+      <td>
+        <select name="ebay_sandbox">
+          <option value="" {% if not st.ebay_sandbox.value %}selected{% endif %}>no — production</option>
+          <option value="true" {% if st.ebay_sandbox.value %}selected{% endif %}>yes — sandbox</option>
+        </select>
+      </td>
+      <td class="meta small">Sandbox has no real listings; use it only to validate credentials.</td>
+    </tr>
+  </table>
+
+  <h2>Other credentials</h2>
+  <table class="settings">
+    <tr>
+      <th>OpenAI API key</th>
+      <td><input type="password" name="openai_api_key" autocomplete="off"
+                 placeholder="{% if st.openai_api_key.present %}•••••••• stored{% else %}not set — LLM extraction disabled{% endif %}"></td>
+      <td class="meta small">
+        {% if st.openai_api_key.present %}<span class="pill done">set</span>{% endif %}
+        Tier-5 price extraction, used only when the four free tiers all fail on a
+        page. Hit <strong>Test extraction</strong> below after saving.
+      </td>
+    </tr>
+    <tr>
+      <th>Extraction model</th>
+      <td><input type="text" name="extraction_model" value="{{ st.extraction_model.value or '' }}"
+                 placeholder="{{ default_extraction_model }}"></td>
+      <td class="meta small">
+        Blank uses <code>{{ default_extraction_model }}</code>. Must be a model your
+        account can call that supports strict JSON schema responses. Changing tier
+        is a settings edit, not a code change.
+      </td>
+    </tr>
+    <tr>
+      <th>Max input chars</th>
+      <td><input type="text" name="llm_max_input_chars" inputmode="numeric"
+                 value="{{ st.get('llm_max_input_chars', {}).get('value') or '' }}"
+                 placeholder="24000"></td>
+      <td class="meta small">
+        Page text is trimmed to the regions around a price before being sent.
+        This cap is the main cost control on the tier.
+      </td>
+    </tr>
+    <tr>
+      <th>Fetch vendor</th>
+      <td>
+        <select name="fetch_vendor">
+          {% for v in ['','scrapingbee','zyte'] %}
+            <option value="{{ v }}" {% if (st.fetch_vendor.value or '') == v %}selected{% endif %}>{{ v or '(none — tier 1 only)' }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td class="meta small">Only used for domains that block direct fetches, and for screenshots.</td>
+    </tr>
+    <tr>
+      <th>ScrapingBee key</th>
+      <td><input type="password" name="scrapingbee_key" autocomplete="off"
+                 placeholder="{% if st.scrapingbee_key.present %}•••••••• stored{% else %}not set{% endif %}"></td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>Zyte key</th>
+      <td><input type="password" name="zyte_key" autocomplete="off"
+                 placeholder="{% if st.zyte_key.present %}•••••••• stored{% else %}not set{% endif %}"></td>
+      <td></td>
+    </tr>
+  </table>
+
+  <div class="row" style="margin-top:1rem">
+    <button type="submit">Save settings</button>
+  </div>
+</form>
+
+<div class="row" style="margin-top:.75rem">
+  <form method="post" action="/settings/test-extraction">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button type="submit" class="secondary">Test extraction</button>
+  </form>
+  <form method="post" action="/settings/test-email">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button type="submit" class="secondary">Send a test email to {{ user.email }}</button>
+  </form>
+  <form method="post" action="/settings/test-vendor">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button type="submit" class="secondary">Test the fetch vendor</button>
+  </form>
+  <form method="post" action="/settings/test-ebay">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button type="submit" class="secondary">Test eBay credentials</button>
+  </form>
+</div>
+<p class="meta small">
+  Test the vendor after pasting a key — it makes a real request through them, so
+  it proves the key works rather than just that it saved.
+</p>
+
+<h2>Search spend (last 30 days)</h2>
+<section class="tiles">
+  <div class="tile"><span class="n">{{ spend.queries_30d }}</span><span class="l">queries</span></div>
+  <div class="tile"><span class="n">{{ spend.domains_30d }}</span><span class="l">new dealers found</span></div>
+  <div class="tile"><span class="n">{{ spend.listings_30d }}</span><span class="l">new listings</span></div>
+  <div class="tile {% if spend.zero_result_30d and spend.queries_30d and spend.zero_result_30d > spend.queries_30d // 2 %}warn{% endif %}">
+    <span class="n">{{ spend.zero_result_30d }}</span><span class="l">zero-result (still billed)</span></div>
+</section>
+{% if usage %}
+<table class="narrow">
+  <thead><tr><th>Provider</th><th>Period</th><th>Queries charged</th></tr></thead>
+  <tbody>{% for u in usage %}
+    <tr><td>{{ u.provider }}</td><td class="meta">{{ u.period }}</td><td class="num">{{ u.used }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+{% endblock %}

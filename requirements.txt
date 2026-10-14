@@ -1,0 +1,35 @@
+# --- core service ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+jinja2==3.1.5
+python-multipart==0.0.20
+
+# --- db ---
+asyncpg==0.30.0
+
+# --- queue ---
+arq==0.26.3
+redis==5.2.1
+
+# --- fetching / parsing ---
+httpx==0.28.1
+selectolax==0.3.27
+extruct==0.18.0
+lxml==5.3.0
+
+# --- matching ---
+rapidfuzz==3.11.0
+
+# --- spreadsheet ingest ---
+openpyxl==3.1.5
+
+# --- LLM extraction fallback ---
+openai==1.59.7
+
+# --- misc ---
+python-dotenv==1.0.1
+
+# --- authentication ---
+bcrypt==4.2.1
+itsdangerous==2.2.0
+cryptography==44.0.0

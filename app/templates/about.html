@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}About this crawler{% endblock %}
+{% block content %}
+<h1>About this crawler</h1>
+<p>
+  This service monitors retail listings of <strong>{{ brand_name }}</strong> products
+  to verify Minimum Advertised Price (MAP) compliance across our dealer network.
+  It only visits publicly accessible product pages.
+</p>
+<h2>Crawler behaviour</h2>
+<ul>
+  <li>User-Agent: <code class="mono">{{ settings.user_agent }}</code></li>
+  <li><code>robots.txt</code> is {% if settings.respect_robots %}respected, including
+      <code>Crawl-delay</code>{% else %}<strong>not</strong> currently respected{% endif %}.</li>
+  <li>At most one request every {{ '%.0f'|format(settings.per_domain_delay) }} seconds per domain.</li>
+  <li>We read product pages only — no forms, no logins, no checkout, no cart.</li>
+  <li>Amazon and social platforms are excluded entirely.</li>
+</ul>
+<h2>Contact</h2>
+<p>
+  If this crawler is causing you problems or you would like it to stop visiting
+  your site, {% if contact_email %}email <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>{% else %}contact the site operator{% endif %}
+  and we will exclude your domain.
+</p>
+{% endblock %}

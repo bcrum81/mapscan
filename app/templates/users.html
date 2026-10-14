@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h1>Users</h1>
+
+{% if notice %}<p class="alert {% if link %}warn{% else %}ok{% endif %}">{{ notice }}</p>{% endif %}
+{% if link %}
+  <div class="linkbox">
+    <label class="meta small">Invite link for <strong>{{ invited }}</strong> — send it
+      to them yourself. It works once and expires in 72 hours.</label>
+    <input type="text" readonly value="{{ link }}" id="invite-link"
+           onclick="this.select()">
+    <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('invite-link').value); this.textContent='copied'">copy</button>
+  </div>
+{% endif %}
+
+{% if not email_enabled %}
+  <p class="meta">
+    Email delivery is <strong>not configured</strong> (<code>EMAIL_PROVIDER={{ email_provider }}</code>),
+    so invite links are shown here for you to pass on. Set <code>EMAIL_PROVIDER</code>
+    to <code>smtp</code> or <code>resend</code> in <code>.env</code> and the app
+    will send them itself.
+  </p>
+{% endif %}
+
+<h2>Invite a user</h2>
+<form method="post" action="/users" class="scan">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <input type="email" name="email" placeholder="name@example.com" required>
+  <label class="inline meta"><input type="checkbox" name="is_admin" value="1">
+    administrator (can invite and deactivate users)</label>
+  <button type="submit">Send invite</button>
+</form>
+
+<h2>Accounts</h2>
+<table>
+  <thead><tr>
+    <th>Email</th><th>Role</th><th>State</th><th>Last sign-in</th>
+    <th>Password set</th><th>Invited by</th><th></th>
+  </tr></thead>
+  <tbody>{% for u in rows %}
+    <tr class="{% if not u.is_active %}inactive{% endif %}">
+      <td>{{ u.email }}{% if u.id == user.id %} <span class="meta">(you)</span>{% endif %}</td>
+      <td>{% if u.is_admin %}<span class="pill done">admin</span>{% else %}<span class="meta">user</span>{% endif %}</td>
+      <td>
+        {% if not u.is_active %}<span class="pill open">deactivated</span>
+        {% elif u.must_change_password %}<span class="pill warn">must change password</span>
+        {% elif not u.password_changed_at and u.pending_invite_expires %}<span class="pill queued">invite pending</span>
+        {% elif not u.password_changed_at %}<span class="pill open">invite expired</span>
+        {% else %}<span class="pill done">active</span>{% endif %}
+      </td>
+      <td class="meta">{% if u.last_login_at %}{{ u.last_login_at.strftime('%Y-%m-%d %H:%M') }}{% else %}never{% endif %}</td>
+      <td class="meta">{% if u.password_changed_at %}{{ u.password_changed_at.strftime('%Y-%m-%d') }}{% else %}—{% endif %}</td>
+      <td class="meta">{{ u.created_by_email or '—' }}</td>
+      <td class="row">
+        <form method="post" action="/users/{{ u.id }}/reinvite">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <button type="submit" class="secondary small">re-invite</button>
+        </form>
+        {% if u.id != user.id %}
+        <form method="post" action="/users/{{ u.id }}/toggle">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <button type="submit" class="secondary small">{% if u.is_active %}deactivate{% else %}reactivate{% endif %}</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}</tbody>
+</table>
+
+<h2>Recent auth activity</h2>
+<table class="narrow">
+  <thead><tr><th>When</th><th>Event</th><th>Account</th><th>IP</th><th>Detail</th></tr></thead>
+  <tbody>{% for e in events %}
+    <tr><td class="meta">{{ e.created_at.strftime('%m-%d %H:%M:%S') }}</td>
+        <td>{% if e.event == 'login_fail' %}<span class="bad">{{ e.event }}</span>
+            {% else %}{{ e.event }}{% endif %}</td>
+        <td class="meta">{{ e.email_lower or '—' }}</td>
+        <td class="mono small">{{ e.ip or '—' }}</td>
+        <td class="meta small">{{ e.detail or '' }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endblock %}

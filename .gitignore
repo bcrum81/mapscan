@@ -1,0 +1,39 @@
+# --- OS / editor ---
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# --- Claude Code machine-local settings ---
+**/.claude/settings.local.json
+
+# --- Secrets: never commit ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!*.pub
+*.p12
+credentials.json
+*service-account*.json
+
+# --- Logs / caches ---
+*.log
+__pycache__/
+*.pyc
+.pytest_cache/
+
+venv/
+.venv/
+node_modules/
+evidence/
+key/
+*.db
+logs/
+
+# --- real catalogue data (wholesale pricing): keep out of git ---
+*.csv
+*.xlsx
+!sample-products.csv
+
